@@ -14,14 +14,16 @@ const YogaList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 3;
 
   const fetchItems = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const url = 'https://dae-mobile-assignment.hkit.cc/api/yoga-poses';
-      console.log(`開始請求 API: ${url}`);
+      // 明確指定要獲取全部 20 個式
+      const url = 'https://dae-mobile-assignment.hkit.cc/api/yoga-poses?limit=20&page=1';
+      console.log('發送請求到:', url);
 
       const response = await fetch(url, {
         method: 'GET',
@@ -31,28 +33,31 @@ const YogaList = () => {
         }
       });
 
-      console.log('API 響應狀態:', response.status);
-      console.log('API 響應標頭:', Object.fromEntries(response.headers.entries()));
+      const data = await response.json();
+      console.log('API 回應:', data);
 
-      const text = await response.text();
-      console.log('API 響應內容:', text);
-
-      if (!response.ok) {
-        throw new Error(`API 錯誤: ${response.status} - ${text}`);
+      // 如果是測試錯誤，等待後重試
+      if (data.error === "Error injected for testing purposes") {
+        if (retryCount < 3) {
+          setRetryCount(prev => prev + 1);
+          const waitTime = Math.max(data.probabilityWindow - data.timePassed, 1000);
+          setTimeout(fetchItems, waitTime);
+          return;
+        }
       }
 
-      const data = JSON.parse(text);
-      console.log('解析後的數據:', data);
-
-      if (!Array.isArray(data.items)) {
-        throw new Error(`數據格式錯誤: ${JSON.stringify(data)}`);
+      // 確保有 items 且是陣列
+      if (data.items && Array.isArray(data.items)) {
+        console.log(`獲取到 ${data.items.length} 個瑜伽動作`);
+        setItems(data.items);
+        setRetryCount(0);
+      } else {
+        throw new Error('無法獲取瑜伽動作列表');
       }
 
-      setItems(data.items);
-      setRetryCount(0);
     } catch (err) {
-      console.error('完整錯誤信息:', err);
-      setError(`載入失敗: ${err.message}`);
+      console.error('載入錯誤:', err);
+      setError('載入瑜伽動作時發生錯誤，請稍後再試');
     } finally {
       setLoading(false);
     }
@@ -62,32 +67,27 @@ const YogaList = () => {
     fetchItems();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="loading">
-        載入中...
-        {retryCount > 0 && <div className="retry-info">第 {retryCount + 1} 次嘗試</div>}
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="error-container">
-        <div className="error-message">{error}</div>
-        <button onClick={() => fetchItems()} className="retry-button">
-          重試
-        </button>
-      </div>
-    );
-  }
-
-  if (items.length === 0) {
-    return <div className="no-data">暫無資料</div>;
-  }
-
   return (
     <div className="yoga-list">
+      {loading && (
+        <div className="loading">
+          載入中...
+          {retryCount > 0 && <div>第 {retryCount + 1} 次嘗試</div>}
+        </div>
+      )}
+
+      {error && (
+        <div className="error-container">
+          <div className="error-message">{error}</div>
+          <button onClick={() => {
+            setRetryCount(0);
+            fetchItems();
+          }} className="retry-button">
+            重試
+          </button>
+        </div>
+      )}
+
       <div className="items-grid">
         {items.map(item => (
           <div key={item.id} className="yoga-item">
@@ -99,6 +99,12 @@ const YogaList = () => {
           </div>
         ))}
       </div>
+
+      {items.length > 0 && (
+        <div style={{ textAlign: 'center', marginTop: '10px' }}>
+          目前顯示: {items.length} 個瑜伽動作
+        </div>
+      )}
     </div>
   );
 };
