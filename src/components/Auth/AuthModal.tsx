@@ -9,22 +9,17 @@ interface AuthModalProps {
 
 const AuthModal: React.FC<AuthModalProps> = ({ mode, onClose }) => {
   return (
-    <AnimatePresence>
-      <div className="modal-overlay" onClick={onClose}>
-        <motion.div
-          className="modal-content"
-          onClick={e => e.stopPropagation()}
-          initial={{ opacity: 0, y: -50 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -50 }}
-        >
-          <button className="close-button" onClick={onClose}>
-            ✕
-          </button>
-          <AuthForm mode={mode} onSuccess={onClose} />
-        </motion.div>
+    <div className="modal-overlay" onClick={onClose}>
+      <div 
+        className="modal-content"
+        onClick={e => e.stopPropagation()}
+      >
+        <button className="close-button" onClick={onClose}>
+          ✕
+        </button>
+        <AuthForm mode={mode} onSuccess={onClose} />
       </div>
-    </AnimatePresence>
+    </div>
   );
 };
 

@@ -36,6 +36,60 @@
   border-radius: 8px;
   width: 90%;
   max-width: 400px;
+  position: relative;
+}
+
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #666;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.form-group label {
+  font-weight: bold;
+}
+
+.form-group input {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.error-message {
+  color: #f44336;
+  font-size: 14px;
+  margin-top: 5px;
+}
+
+.submit-button {
+  padding: 10px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.submit-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
 }
 
 .yoga-list {
@@ -131,11 +185,6 @@ input {
   border-radius: 4px;
 }
 
-.error-message {
-  color: #f44336;
-  margin: 8px 0;
-}
-
 .modal-buttons {
   display: flex;
   gap: 10px;
@@ -165,11 +214,6 @@ label {
   background-color: #fff3f3;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.error-message {
-  color: #f44336;
-  margin-bottom: 15px;
 }
 
 .retry-button {

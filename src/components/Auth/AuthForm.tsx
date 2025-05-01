@@ -11,30 +11,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onSuccess }) => {
   const { login, register } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState<{
-    username?: string;
-    password?: string;
-    general?: string;
-  }>({});
+  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // 驗證輸入
-    const usernameError = validateUsername(username);
-    const passwordError = validatePassword(password);
-    
-    if (usernameError || passwordError) {
-      setErrors({
-        username: usernameError || undefined,
-        password: passwordError || undefined,
-      });
-      return;
-    }
-
+    setError('');
     setIsLoading(true);
-    setErrors({});
 
     try {
       if (mode === 'login') {
@@ -43,12 +26,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onSuccess }) => {
         await register(username, password);
       }
       onSuccess();
-    } catch (error) {
-      setErrors({
-        general: mode === 'login' 
-          ? '登入失敗，請檢查用戶名和密碼' 
-          : '註冊失敗，請稍後再試',
-      });
+    } catch (err) {
+      console.error('認證錯誤:', err);
+      setError(mode === 'login' ? '登入失敗' : '註冊失敗');
     } finally {
       setIsLoading(false);
     }
@@ -68,9 +48,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onSuccess }) => {
           disabled={isLoading}
           placeholder="請輸入用戶名"
         />
-        {errors.username && (
-          <span className="error">{errors.username}</span>
-        )}
       </div>
 
       <div className="form-group">
@@ -83,14 +60,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode, onSuccess }) => {
           disabled={isLoading}
           placeholder="請輸入密碼"
         />
-        {errors.password && (
-          <span className="error">{errors.password}</span>
-        )}
       </div>
 
-      {errors.general && (
+      {error && (
         <div className="error general-error">
-          {errors.general}
+          {error}
         </div>
       )}
 
