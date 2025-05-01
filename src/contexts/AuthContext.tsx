@@ -1,71 +1,97 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { api } from '../services/api';
-import { User } from '../types';
 
 interface AuthContextType {
-  user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
+  isLoggedIn: boolean;
+  userId: number | null;
+  token: string | null;
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, password: string) => Promise<void>;
   logout: () => void;
-  error: string | null;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | null>(null);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
-  children 
-}) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userId, setUserId] = useState<number | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    // 從 localStorage 恢復登入狀態
+    const savedToken = localStorage.getItem('token');
+    const savedUserId = localStorage.getItem('userId');
+    if (savedToken && savedUserId) {
+      setToken(savedToken);
+      setUserId(Number(savedUserId));
+      setIsLoggedIn(true);
+    }
+  }, []);
 
   const login = async (username: string, password: string) => {
     try {
-      const response = await api.auth.login(username, password);
-      setUser(response);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'An error occurred');
+      const response = await fetch('https://dae-mobile-assignment.hkit.cc/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+
+      if (!response.ok) {
+        throw new Error('登入失敗');
+      }
+
+      const data = await response.json();
+      setToken(data.token);
+      setUserId(data.user_id);
+      setIsLoggedIn(true);
+      
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('userId', String(data.user_id));
+    } catch (error) {
+      console.error('登入錯誤:', error);
+      throw error;
     }
   };
 
   const register = async (username: string, password: string) => {
     try {
-      const response = await api.auth.register(username, password);
-      setUser(response);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'An error occurred');
+      const response = await fetch('https://dae-mobile-assignment.hkit.cc/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+
+      if (!response.ok) {
+        throw new Error('註冊失敗');
+      }
+
+      const data = await response.json();
+      setToken(data.token);
+      setUserId(data.user_id);
+      setIsLoggedIn(true);
+      
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('userId', String(data.user_id));
+    } catch (error) {
+      console.error('註冊錯誤:', error);
+      throw error;
     }
   };
 
   const logout = () => {
-    setUser(null);
+    setToken(null);
+    setUserId(null);
+    setIsLoggedIn(false);
+    localStorage.removeItem('token');
+    localStorage.removeItem('userId');
   };
 
-  useEffect(() => {
-    const checkStatus = async () => {
-      try {
-        const response = await api.auth.checkStatus();
-        setUser(response);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'An error occurred');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkStatus();
-  }, []);
-
-  const value: AuthContextType = {
-    user,
-    isAuthenticated: !!user,
-    isLoading,
+  const value = {
+    isLoggedIn,
+    userId,
+    token,
     login,
     register,
-    logout,
-    error,
+    logout
   };
 
   return (
@@ -77,7 +103,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;

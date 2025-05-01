@@ -397,7 +397,7 @@ function resetFilters() {
 async function fetchData() {
   try {
     // 嘗試從 API 請求資料
-    let response = await fetch("https://example.com/api/yogaposes");
+    let response = await fetch("https://dae-mobile-assignment.hkit.cc/api/yoga-poses");
 
     if (!response.ok) {
       // 如果 API 回應錯誤（如 404、500 等）
@@ -462,3 +462,4 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 });
+

@@ -8,9 +8,16 @@ import SearchFilters from './SearchFilters';
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { useBookmarks } from '../../hooks/useBookmarks';
 
+interface YogaItem {
+  id: number;
+  title: string;
+  description: string;
+  imageUrl?: string;
+}
+
 const YogaList: React.FC = () => {
-  const [items, setItems] = useState<YogaAction[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [items, setItems] = useState<YogaItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [params, setParams] = useState<ListParams>({
@@ -20,44 +27,24 @@ const YogaList: React.FC = () => {
   const { bookmarkedItems, isBookmarked } = useBookmarks();
   const [showBookmarkedOnly, setShowBookmarkedOnly] = useState(false);
 
-  const fetchItems = async (isLoadMore = false) => {
+  const loadData = async () => {
     try {
       setLoading(true);
       setError(null);
-      
-      const response = await api.yoga.getList({
-        ...params,
-        page: String(params.page),
-        limit: String(params.limit),
-      });
-
-      let newItems = response.items;
-      if (showBookmarkedOnly) {
-        newItems = newItems.filter(item => isBookmarked(item.id));
-      }
-
-      setItems(prev => isLoadMore ? [...prev, ...newItems] : newItems);
-      setHasMore(response.pagination.page * response.pagination.limit < response.pagination.total);
+      const response = await api.getItems();
+      console.log('API 響應:', response);
+      setItems(response.items || []);
     } catch (err) {
+      console.error('載入錯誤:', err);
       setError('載入瑜伽動作時發生錯誤，請稍後再試');
     } finally {
       setLoading(false);
     }
   };
 
-  const loadMore = useCallback(() => {
-    if (!loading && hasMore) {
-      setParams(prev => ({ ...prev, page: prev.page + 1 }));
-    }
-  }, [loading, hasMore]);
-
-  useInfiniteScroll(loadMore, hasMore, loading);
-
   useEffect(() => {
-    setParams(prev => ({ ...prev, page: 1 }));
-    setItems([]);
-    fetchItems();
-  }, [params.search, params.category, params.sort, params.order, showBookmarkedOnly]);
+    loadData();
+  }, []);
 
   const handleSearch = (searchParams: Partial<ListParams>) => {
     setParams(prev => ({
@@ -67,6 +54,19 @@ const YogaList: React.FC = () => {
     }));
   };
 
+  if (loading) return <Loading />;
+  if (error) return (
+    <div className="error-container">
+      <ErrorMessage message={error} />
+      <button 
+        className="retry-button"
+        onClick={loadData}
+      >
+        重試
+      </button>
+    </div>
+  );
+
   return (
     <div className="yoga-list">
       <SearchFilters 
@@ -74,8 +74,6 @@ const YogaList: React.FC = () => {
         showBookmarkedOnly={showBookmarkedOnly}
         onToggleBookmarkedOnly={() => setShowBookmarkedOnly(prev => !prev)}
       />
-
-      {error && <ErrorMessage message={error} />}
 
       <div className="yoga-grid">
         {items.map(item => (
@@ -87,10 +85,8 @@ const YogaList: React.FC = () => {
         ))}
       </div>
 
-      {loading && <Loading />}
-
-      {!loading && !hasMore && items.length > 0 && (
-        <div className="no-more">沒有更多瑜伽動作了</div>
+      {!loading && !error && items.length === 0 && (
+        <div className="no-results">沒有找到相關的瑜伽動作</div>
       )}
     </div>
   );

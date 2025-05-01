@@ -3,7 +3,8 @@ import { useEffect, useCallback } from 'react';
 export const useInfiniteScroll = (
   onLoadMore: () => void,
   hasMore: boolean,
-  loading: boolean
+  loading: boolean,
+  threshold: number = 100
 ) => {
   const handleScroll = useCallback(() => {
     if (loading || !hasMore) return;
@@ -12,11 +13,10 @@ export const useInfiniteScroll = (
     const scrollTop = document.documentElement.scrollTop;
     const clientHeight = document.documentElement.clientHeight;
 
-    // 當用戶滾動到距離底部 100px 時載入更多
-    if (scrollHeight - scrollTop - clientHeight < 100) {
+    if (scrollHeight - scrollTop - clientHeight < threshold) {
       onLoadMore();
     }
-  }, [loading, hasMore, onLoadMore]);
+  }, [loading, hasMore, onLoadMore, threshold]);
 
   useEffect(() => {
     window.addEventListener('scroll', handleScroll);

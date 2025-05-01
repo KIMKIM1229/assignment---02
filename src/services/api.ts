@@ -1,4 +1,5 @@
-const BASE_URL = 'https://dae-mobile-assignment.hkit.cc/api';
+const BASE_URL = 'https://dae-mobile-assignment.hkit.cc';
+const API_PATH = '/api';
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -11,36 +12,45 @@ export const api = {
   async request<T>(
     endpoint: string,
     options: RequestInit = {},
-    params?: Record<string, string>
+    params?: Record<string, any>
   ): Promise<T> {
-    const url = new URL(`${BASE_URL}${endpoint}`);
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          url.searchParams.append(key, value);
-        }
-      });
-    }
-
-    const token = localStorage.getItem('token');
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` }),
-      ...options.headers,
-    };
-
     try {
+      const url = new URL(`${BASE_URL}${API_PATH}${endpoint}`);
+      if (params) {
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && value !== '') {
+            url.searchParams.append(key, String(value));
+          }
+        });
+      }
+
+      const token = localStorage.getItem('token');
+      const headers: HeadersInit = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+        ...options.headers,
+      };
+
+      console.log('Requesting:', url.toString());
+
       const response = await fetch(url.toString(), {
         ...options,
         headers,
+        mode: 'cors',
+        credentials: 'omit',
       });
 
       if (!response.ok) {
+        console.error('Response not OK:', response.status, response.statusText);
         throw new ApiError(response.status, await response.text());
       }
 
-      return response.json();
+      const data = await response.json();
+      console.log('Response data:', data);
+      return data;
     } catch (error) {
+      console.error('API Error:', error);
       if (error instanceof ApiError) {
         throw error;
       }
@@ -50,11 +60,29 @@ export const api = {
 
   // 瑜伽動作相關 API
   yoga: {
-    async getList(params?: Record<string, string>) {
+    async getList(params?: Record<string, any>) {
       return api.request('/yoga-actions', {
         method: 'GET',
-      }, params);
+        headers: {
+          'Accept': 'application/json',
+        }
+      }, {
+        page: params?.page || 1,
+        limit: params?.limit || 5,
+        ...params
+      });
     },
+
+    async getCategories() {
+      try {
+        const response = await fetch(`${BASE_URL}${API_PATH}/yoga-poses/categories`);
+        if (!response.ok) throw new Error('無法獲取分類');
+        return await response.json();
+      } catch (error) {
+        console.error('獲取分類時出錯:', error);
+        throw error;
+      }
+    }
   },
 
   // 認證相關 API
