@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useBookmarks } from '../hooks/useBookmarks';
+import YogaCard from './YogaCard';
 
 interface YogaItem {
   id: number;
@@ -196,21 +197,12 @@ const YogaList = () => {
 
       <div className="items-grid">
         {items.map(item => (
-          <div key={item.id} className="yoga-item">
-            <h3>{item.title}</h3>
-            <p>{item.description}</p>
-            {item.imageUrl && (
-              <img src={item.imageUrl} alt={item.title} />
-            )}
-            {isLoggedIn && (
-              <button
-                onClick={() => handleBookmarkToggle(item.id)}
-                className={`bookmark-button ${isBookmarked(item.id) ? 'bookmarked' : ''}`}
-              >
-                {isBookmarked(item.id) ? '❤️ 取消收藏' : '🤍 收藏'}
-              </button>
-            )}
-          </div>
+          <YogaCard
+            key={item.id}
+            item={item}
+            isBookmarked={isBookmarked(item.id)}
+            onBookmarkToggle={handleBookmarkToggle}
+          />
         ))}
       </div>
 
